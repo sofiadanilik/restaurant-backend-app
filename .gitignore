@@ -1,0 +1,37 @@
+
+# Virtual environments
+syndicate_venv/
+.venv/
+venv/
+
+# AWS local configuration
+.aws/
+.syndicate-config-*/
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*credentials*
+*secret*
+terraform.tfvars
+*.tfstate
+*.tfstate.*
+
+# Generated files
+bin/
+obj/
+node_modules/
+__pycache__/
+*.pyc
+.vs/
+.vscode/
+*.log
+*.zip
+outputs/
+
+syndicate_aliases.yml
+syndicate-update-help.txt
