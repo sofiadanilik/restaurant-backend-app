@@ -190,6 +190,9 @@ public class ReservationServiceTests
         var result = await _reservationService.CreateReservationAsync(request, callerId, isWaiter: false, _mockLogger.Object);
 
         _mockGroupReservationService.Verify(r => r.CreateGroupReservationAsync(It.IsAny<string>(), callerId));
+        _mockOrderService.Verify(o => o.AddOrderForWaiterAsync(It.Is<Order>(order =>
+            order.ReservationId == result.Id && order.CustomerId == callerId &&
+            order.Dishes.Count == 0 && order.Status == OrderStatus.Created)), Times.Once);
     }
 
     [Theory, AutoData]

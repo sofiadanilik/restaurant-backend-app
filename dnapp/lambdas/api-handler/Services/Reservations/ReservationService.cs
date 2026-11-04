@@ -70,7 +70,12 @@ public class ReservationService : IReservationService
         await UpdateWaiterReservationsAsync(reservation.WaiterId, reservation.Id);
 
         if (request.GuestCount >= 2)
+        {
+            // Group Submit expects an active Order. Create the empty order at
+            // reservation creation time, not at Submit (HW8 negative case).
+            await EnsureGroupOrderAsync(reservation, location.Address, table.TableNumber);
             await _groupReservationService.CreateGroupReservationAsync(reservation.Id, reservation.CustomerId);
+        }
 
         return ReservationMapper.ToReservationResponse(reservation, location.Address);
     }
@@ -117,7 +122,12 @@ public class ReservationService : IReservationService
         if (reservation.Status == ReservationStatus.Reserved)
         {
             if (reservation.GuestCount >= 2)
+            {
+                var table = await _locationRepository.GetTableByIdAsync(reservation.TableId);
+                var location = await _locationService.GetLocationByTableIdAsync(reservation.TableId);
+                await EnsureGroupOrderAsync(reservation, location?.Address ?? "Green & Tasty", table?.TableNumber ?? 0);
                 await _groupReservationService.CreateGroupReservationIfDoesNotExistAsync(reservation.CustomerId, reservation.Id);
+            }
 
             return true;
         }
@@ -264,6 +274,28 @@ public class ReservationService : IReservationService
             logger.Log($"Error fetching location: {ex.Message}");
             throw;
         }
+    }
+
+    // Do not create an order for walk-in reservations without a customer.
+    // Reusing a valid existing order protects individual pre-orders and edits.
+    private async Task EnsureGroupOrderAsync(Reservation reservation, string address, int tableNumber)
+    {
+        if (string.IsNullOrWhiteSpace(reservation.CustomerId))
+            return;
+
+        if (await _orderService.GetOrderByReservationIdAsync(reservation.Id) is not null)
+            return;
+
+        await _orderService.AddOrderForWaiterAsync(new Order
+        {
+            OrderId = Guid.NewGuid().ToString(),
+            CustomerId = reservation.CustomerId,
+            ReservationId = reservation.Id,
+            ReservationAddress = $"{address}, Table {tableNumber}",
+            ReservationTime = $"{reservation.StartTime:yyyy-MM-dd HH:mm} - {reservation.EndTime:HH:mm}",
+            Dishes = [],
+            Status = OrderStatus.Created
+        });
     }
 
     private async Task SaveReservationAsync(Reservation reservation, ILambdaLogger logger)
