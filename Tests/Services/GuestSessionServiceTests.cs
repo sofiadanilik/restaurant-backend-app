@@ -799,7 +799,7 @@ public class GuestSessionServiceTests
 
         _mockGuestSessionRepository
             .Setup(r => r.CountByGroupReservationId(groupReservation.GroupReservationId))
-            .ReturnsAsync(guestCount);
+            .ReturnsAsync(reservationCapacity);
 
         var exception = await Assert.ThrowsAsync<GuestLimitExceededException>(() => _guestSessionService.CreateGuestSessionAsync(request));
 

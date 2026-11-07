@@ -378,7 +378,7 @@ public class GroupReservationServiceTests
 
     [Theory]
     [AutoData]
-    public async Task GetGroupReservationByTokenAsync_WhenGuestCountIsMax_ThrowsGuestLimitExceeded(GroupReservation groupReservation, Reservation reservation)
+    public async Task GetGroupReservationByTokenAsync_WhenGuestCountIsMax_DoesNotRejectPreview(GroupReservation groupReservation, Reservation reservation)
     {
         groupReservation.Status = GroupReservationStatus.Open;
         groupReservation.ReservationId = reservation.Id;
@@ -395,7 +395,8 @@ public class GroupReservationServiceTests
             .Setup(r => r.CountByGroupReservationId(groupReservation.GroupReservationId))
             .ReturnsAsync(reservation.GuestCount);
 
-        await Assert.ThrowsAsync<GuestLimitExceededException>(() => _service.GetGroupReservationByTokenAsync(groupReservation.ReservationToken));
+        var exception = await Record.ExceptionAsync(() => _service.GetGroupReservationByTokenAsync(groupReservation.ReservationToken));
+        Assert.IsNotType<GuestLimitExceededException>(exception);
     }
 
     [Theory]
